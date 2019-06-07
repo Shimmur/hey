@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/rakyll/hey.svg?branch=master)](https://travis-ci.org/rakyll/hey)
 
+### This is a fork of `hey` that allows us to append random bytes to a URL
+
 hey is a tiny program that sends some load to a web application.
 
 hey was originally called boom and was influenced from Tarek Ziade's
@@ -45,7 +47,8 @@ Options:
   -a  Basic authentication, username:password.
   -x  HTTP Proxy address as host:port.
   -h2 Enable HTTP/2.
-
+  -r  Append random bytes to a URL
+  
   -host	HTTP Host header.
 
   -disable-compression  Disable compression.
@@ -54,6 +57,8 @@ Options:
   -disable-redirects    Disable following of HTTP redirects
   -cpus                 Number of used cpu cores.
                         (default for current machine is 8 cores)
+  -rcount               Number of bytes to append to each request;
+						used together with -r; default: 10
 ```
 
 Previously known as [github.com/rakyll/boom](https://github.com/rakyll/boom).
