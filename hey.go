@@ -55,9 +55,11 @@ var (
 	q = flag.Float64("q", 0, "")
 	t = flag.Int("t", 20, "")
 	z = flag.Duration("z", 0, "")
+	r = flag.Bool("r", false, "")
 
-	h2   = flag.Bool("h2", false, "")
-	cpus = flag.Int("cpus", runtime.GOMAXPROCS(-1), "")
+	h2     = flag.Bool("h2", false, "")
+	cpus   = flag.Int("cpus", runtime.GOMAXPROCS(-1), "")
+	rcount = flag.Int("rcount", 10, "")
 
 	disableCompression = flag.Bool("disable-compression", false, "")
 	disableKeepAlives  = flag.Bool("disable-keepalive", false, "")
@@ -90,6 +92,8 @@ Options:
   -a  Basic authentication, username:password.
   -x  HTTP Proxy address as host:port.
   -h2 Enable HTTP/2.
+  -r  Append random bytes to a URL
+  
 
   -host	HTTP Host header.
 
@@ -98,7 +102,9 @@ Options:
                         connections between different HTTP requests.
   -disable-redirects    Disable following of HTTP redirects
   -cpus                 Number of used cpu cores.
-                        (default for current machine is %d cores)
+						(default for current machine is %d cores)
+  -rcount               Number of bytes to append to each request;
+						used together with -r; default: 10
 `
 
 func main() {
@@ -217,6 +223,8 @@ func main() {
 		RequestBody:        bodyAll,
 		N:                  num,
 		C:                  conc,
+		R:                  *r,
+		RCount:             *rcount,
 		QPS:                q,
 		Timeout:            *t,
 		DisableCompression: *disableCompression,

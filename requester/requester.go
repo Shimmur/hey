@@ -18,8 +18,10 @@ package requester
 import (
 	"bytes"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -61,6 +63,12 @@ type Work struct {
 
 	// H2 is an option to make HTTP/2 requests
 	H2 bool
+
+	// R is an option to append random bytes to the URL
+	R bool
+
+	// RCount sets the number of random bytes that will be appended to a URL
+	RCount int
 
 	// Timeout in seconds.
 	Timeout int
@@ -140,6 +148,38 @@ func (b *Work) Finish() {
 	b.report.finalize(total)
 }
 
+// KMATTHIAS - Random strings
+var src = rand.NewSource(time.Now().UnixNano())
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+var randLock sync.Mutex
+
+func RandStringBytesMaskImprSrc(n int) string {
+	b := make([]byte, n)
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			randLock.Lock()
+			cache, remain = src.Int63(), letterIdxMax
+			randLock.Unlock()
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			b[i] = letterBytes[idx]
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return string(b)
+}
+
 func (b *Work) makeRequest(c *http.Client) {
 	s := now()
 	var size int64
@@ -147,6 +187,19 @@ func (b *Work) makeRequest(c *http.Client) {
 	var dnsStart, connStart, resStart, reqStart, delayStart time.Duration
 	var dnsDuration, connDuration, resDuration, reqDuration, delayDuration time.Duration
 	req := cloneRequest(b.Request, b.RequestBody)
+
+	if b.R {
+		var err error
+
+		randomStr := url.QueryEscape(RandStringBytesMaskImprSrc(b.RCount))
+
+		req.URL, err = url.Parse(fmt.Sprint(req.URL, randomStr))
+
+		if err != nil {
+			fmt.Println("unable to complete URL parse: ", err)
+		}
+	}
+
 	trace := &httptrace.ClientTrace{
 		DNSStart: func(info httptrace.DNSStartInfo) {
 			dnsStart = now()
